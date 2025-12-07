@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>留言板</title>
+    <style>
+        body{
+            background: #5f9ea0;
+            height: 100%;
+            margin-bottom: 50px;
+        }
+
+        .container{
+            display: flex;
+            justify-content: center;
+        }
+
+        input[type="text"],
+        textarea{
+            margin: 5px 10px;
+            outline: aliceblue;
+            border: 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        input[type="text"]:disabled,textarea:disabled{
+            background: gray;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+<div class="conrainer">
+    <div class="comment-box">
+        <button class="close">关闭留言</button>
+        <div class="comment-form">
+            <div clss="header">留言板</div>
+            <!--form开始-->
+            <div>
+                <input type="text" id="name" placeholder="输入您的姓名。。。">
+            </div>
+            <div>
+                <textarea id="comment" cols="30" rows="3" placeholder="请输入您的留言。。。"></textarea>
+            </div>
+            <button id="btn-post">留言</button>
+        </div>
+        <!--from 结束-->
+        <div>
+            <h4 class="header">留言列表</h4>
+            <div id="comments">
+                <!--插入留言-->
+                <!hr>
+                <!h4>
+                    <!span>姓名<!/span>
+                    <!span class="data">日期</span>
+                <!/h4>
+                <!p>留言内容<!/p>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const comments = [
+        {
+            name: "Danny",
+            comment:
+            "hello",
+            time:"Thu jan 12 2022",
+        },
+        {
+            name: "Jackson",
+            comment:"Lorem",
+            time:"Thu jan 11 2022",
+        },
+    ];
+    const commentBox = document.querySelector('#comments');//获取ID为comments的元素这里是渲染评论的内容
+    const nameInput = document.querySelector('#name');//读取用户的姓名即获取ID为name的元素
+    const commentInput = document.querySelector('#comment');//获取ID为comment的元素读取用户输入的评论内容
+    const btnSubmit = document.querySelector('#btn-post');//一样的功能是提交按钮用于绑定点击的事件触发评论提交逻辑
+
+
+    //comments数组存取所有评论数据的数组
+    comments.forEach((item) =>{
+        console.log(item);//在浏览器控制台打印当前遍历对象，用于调试查看评论数据,Java自带的console调试工具对象
+        //向commentBox（评论列表容器DOM）的内部末尾插入以下结构，其中insertAdjacentHTML是插入作用，beforeend是插入的位置
+        commentBox.insertAdjacentHTML('beforeend',
+        `<hr>
+                <h4>
+                    <span>${item.name}</span>
+                    <span class="data">${item.time}</span>
+                </h4>
+                 <p>${item.comment}</p>
+       `)
+    })
+
+    //监听该按钮同时绑定好后面的函数并执行操作function就是绑定函数,btnSubmit是物理按钮即用户操作的按钮
+    btnSubmit.onclick = function (){
+
+        let namestr = nameInput.value.replace(/<(\/?\w+)>/g,"&lt;$1&gt:");//读取nameInput姓名输入框replace用正则表达式将部分转为文本防止XSS
+        let commentser = commentInput.value.replace(/<(\/?\w+)>/g,"&lt;$1&gt:");//读取commentInput评论输入框内容
+        comments.unshift({
+            name:namestr,//姓名name属性名namestr属性值
+            comment: commentser,//评论内容
+            time: new Date(),//获取用户提交的时间
+        })
+        commentBox.innerHTML ='';//清空commentBox的HTML的内容
+
+        //执行评论渲染同时再进行插入forEach为遍历函数
+        comments.forEach((item) =>{
+        console.log(item);//打印当前遍历过的评论对象
+
+            //将弄好的HTML结构插入commentBox容器的尾部
+        commentBox.insertAdjacentHTML('beforeend',
+        `<hr>
+                <h4>
+                    <span>${item.name}</span>
+                    <span class="data">${item.time}</span>
+                </h4>
+                <p>${item.comment}</p>
+        `)
+    })
+
+        console.log(comments);//打印当前所有评论数据
+    }
+
+</script>
+</body>
+</html>
