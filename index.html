@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>简易留言板</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Arial", sans-serif; }
+        body { background: #f0f2f5; padding: 50px 0; }
+        .container { width: 80%; max-width: 800px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 30px; }
+        .header { text-align: center; margin-bottom: 30px; color: #165DFF; }
+        .comment-form { margin-bottom: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
+        input[type="text"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; resize: none; }
+        input[type="text"]:focus, textarea:focus { outline: none; border-color: #165DFF; box-shadow: 0 0 0 2px rgba(22, 93, 255, 0.1); }
+        .btn-submit { width: 100%; padding: 12px; background: #165DFF; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; transition: background 0.3s; }
+        .btn-submit:hover { background: #0F48D1; }
+        .comment-list { margin-top: 30px; }
+        .comment-item { padding: 20px; border-bottom: 1px solid #eee; }
+        .comment-item:last-child { border-bottom: none; }
+        .comment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .comment-name { font-weight: 600; color: #165DFF; }
+        .comment-time { font-size: 14px; color: #999; }
+        .comment-content { color: #333; line-height: 1.6; font-size: 15px; }
+        .empty-tip { text-align: center; padding: 40px; color: #999; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="header">📝 简易留言板</h1>
+
+        <!-- 留言提交表单 -->
+        <div class="comment-form">
+            <div class="form-group">
+                <label for="name">您的姓名</label>
+                <input type="text" id="name" placeholder="请输入您的姓名">
+            </div>
+            <div class="form-group">
+                <label for="content">留言内容</label>
+                <textarea id="content" rows="4" placeholder="请输入您的留言（不超过200字）"></textarea>
+            </div>
+            <button class="btn-submit" id="submitBtn">提交留言</button>
+        </div>
+
+        <!-- 留言列表 -->
+        <h2 class="header" style="font-size: 20px; margin-bottom: 20px;">💬 留言列表</h2>
+        <div class="comment-list" id="commentList">
+            <!-- 留言会通过后端渲染或AJAX动态添加 -->
+            {% if comments %}
+                {% for comment in comments %}
+                    <div class="comment-item">
+                        <div class="comment-header">
+                            <span class="comment-name">{{ comment.name }}</span>
+                            <span class="comment-time">{{ comment.time }}</span>
+                        </div>
+                        <div class="comment-content">{{ comment.content }}</div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-tip">暂无留言，快来成为第一个留言的人吧！</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // 提交留言逻辑
+        document.getElementById("submitBtn").addEventListener("click", async () => {
+            const name = document.getElementById("name").value.trim();
+            const content = document.getElementById("content").value.trim();
+
+            // 前端二次验证
+            if (!name || !content) {
+                alert("姓名和留言不能为空！");
+                return;
+            }
+            if (content.length > 200) {
+                alert("留言内容不能超过200字！");
+                return;
+            }
+
+            try {
+                // 发送AJAX请求到后端
+                const response = await fetch("/api/post-comment", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, content })
+                });
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    // 清空输入框
+                    document.getElementById("name").value = "";
+                    document.getElementById("content").value = "";
+
+                    // 动态添加新留言到列表最前面
+                     const commentList = document.getElementById("commentList");
+                     const emptyTip = commentList.querySelector(".empty-tip");
+                     if (emptyTip) emptyTip.remove(); // 移除空提示
+
+                     const newComment = document.createElement("div");
+                     newComment.className = "comment-item";
+                     newComment.innerHTML = `
+                         <div class="comment-header">
+                             <span class="comment-name">${result.comment.name}</span>
+                             <span class="comment-time">${result.comment.time}</span>
+                         </div>
+                         <div class="comment-content">${result.comment.content}</div>
+                     `;
+                     commentList.insertBefore(newComment, commentList.firstChild);
+                 } else {
+                     alert(result.msg);
+                 }
+             } catch (error) {
+                 alert("提交失败，请重试！");
+                 console.error(error);
+             }
+         });
+     </script>
+ </body>
+ </html>
