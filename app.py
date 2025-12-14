@@ -3,6 +3,7 @@ import json
 import os
 import threading
 import queue
+import time
 app = Flask(__name__)
 
 # 用于持久化的文件（服务启动时加载、运行中实时保存）
@@ -12,7 +13,7 @@ COMMENTS = []
 # 定义任务队列和线程控制标志
 save_queue = queue.Queue()#线程安全的任务队列，queue.Queue为python自带的队列
 is_running = True#通过更改is_running值来停止或者运行线程
-
+interval=1;
 # 后台单线程的任务处理函数：持续从队列取任务执行
 def save_worker():
     #is_running！=True结束循环
@@ -24,9 +25,20 @@ def save_worker():
                 #当task为save才进行写的操作
                 with open(COMMENT_FILE, "w", encoding="utf-8") as f:
                     json.dump(COMMENTS, f, ensure_ascii=False, indent=2)#as f  后面是要操作的对象，json.dump模块是将python对象序列化为JSON格式写入文件
+                    time.sleep(interval)
             save_queue.task_done()#标记当前取出的任务已处理完成，需与  get()  配对使用；若后续调用队列的  join()  方法，会等待所有任务都被标记为  done  后再解除阻塞。
         except queue.Empty:
-            continue#捕获队列超时无任务的异常，执行  continue  回到循环开头，让线程继续等待下一轮任务。
+            continue
+            # 兜底处理剩余任务（非递归，安全）
+    while not save_queue.empty():
+        try:
+            task = save_queue.get_nowait()  # 取出并移除剩余任务
+            if task == "save":
+                with open(COMMENT_FILE, "w", encoding="utf-8") as f:
+                    json.dump(COMMENTS, f, ensure_ascii=False, indent=2)
+            save_queue.task_done()
+        except queue.Empty:
+            break
 
 # 启动后台单线程
 worker_thread = threading.Thread(target=save_worker, daemon=True)#target=save_worker指定执行函数
@@ -54,7 +66,7 @@ COMMENTS = load_comments()
 
 
 @app.route('/')
-def index():
+def index(): 
     return render_template('index.html', comments=COMMENTS)
 
 
@@ -89,4 +101,5 @@ if __name__ == '__main__':
         app.run(debug=True)
     finally:
         is_running=False
+        save_queue.join()
         worker_thread.join()
