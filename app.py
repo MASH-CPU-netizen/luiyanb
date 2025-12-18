@@ -13,21 +13,38 @@ COMMENTS = []
 # 定义任务队列和线程控制标志
 save_queue = queue.Queue()#线程安全的任务队列，queue.Queue为python自带的队列
 is_running = True#通过更改is_running值来停止或者运行线程
-interval=1;
+interval=30;
+star_1=time.time();
+F=False
+star=time.time()
 # 后台单线程的任务处理函数：持续从队列取任务执行
 def save_worker():
     #is_running！=True结束循环
+    global F,star_1
     while is_running:
         try:
             # 阻塞等待队列中的任务，timeout 防止线程一直挂起
             task = save_queue.get(timeout=1)#get的作用是等待一秒后无任务则异常
+            save_queue.task_done()  # 标记当前取出的任务已处理完成，需与  get()  配对使用；若后续调用队列的  join()  方法，会等待所有任务都被标记为  done  后再解除阻塞。
             if task == "save":
-                #当task为save才进行写的操作
+                star=time.time()
+                F = True
+            if F and star - star_1 >= interval:
+                # 当task为save才进行写的操作
                 with open(COMMENT_FILE, "w", encoding="utf-8") as f:
-                    json.dump(COMMENTS, f, ensure_ascii=False, indent=2)#as f  后面是要操作的对象，json.dump模块是将python对象序列化为JSON格式写入文件
-                    time.sleep(interval)
-            save_queue.task_done()#标记当前取出的任务已处理完成，需与  get()  配对使用；若后续调用队列的  join()  方法，会等待所有任务都被标记为  done  后再解除阻塞。
+                    json.dump(COMMENTS, f, ensure_ascii=False,
+                              indent=2)  # as f  后面是要操作的对象，json.dump模块是将python对象序列化为JSON格式写入文件
+                star_1 = time.time()
+                F = False
         except queue.Empty:
+            star=time.time()
+            if F and star - star_1 >= interval:
+                # 当task为save才进行写的操作
+                with open(COMMENT_FILE, "w", encoding="utf-8") as f:
+                    json.dump(COMMENTS, f, ensure_ascii=False,
+                              indent=2)  # as f  后面是要操作的对象，json.dump模块是将python对象序列化为JSON格式写入文件
+                star_1 = time.time()
+                F = False
             continue
             # 兜底处理剩余任务（非递归，安全）
     while not save_queue.empty():
