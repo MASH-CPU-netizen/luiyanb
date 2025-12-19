@@ -43,6 +43,7 @@ def save_worker():
                 with open(COMMENT_FILE, "w", encoding="utf-8") as f:
                     json.dump(COMMENTS, f, ensure_ascii=False,
                               indent=2)  # as f  后面是要操作的对象，json.dump模块是将python对象序列化为JSON格式写入文件
+                    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}]",COMMENTS)
                 star_1 = time.time()
                 F = False
             continue
